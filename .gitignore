@@ -1,3 +1,5 @@
 __pycache__
 output/
 test/
+gan.py
+df_remover.py

@@ -1,0 +1,7 @@
+{
+    "input_image_path": "test/tst1.png",
+    "output_folder": "./output",
+    "line_thickness": 1,
+    "line_color": [255, 255, 255] 
+  }
+  

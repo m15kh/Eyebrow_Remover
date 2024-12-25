@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 
 
@@ -52,7 +53,6 @@ def remove_eyebrows(image, eyebrow, expansion=10):
     inpainted_image = cv2.inpaint(image, expanded_mask, inpaintRadius=100, flags=cv2.INPAINT_TELEA)
     return inpainted_image
 
-import numpy as np
 
 
 def calculate_angle(p1, p2, p3):
@@ -88,30 +88,12 @@ def calculate_angle(p1, p2, p3):
 
 
 
-def draw_upward_lines(image, x_averg, y_averg, angle_degrees, length=500, color=(0, 255, 0), thickness=1):
 
-    # Convert angle to radians
-    half_angle = np.radians(angle_degrees / 2)
-    # Calculate the direction vectors for the two lines, making sure they point upwards
-    direction1 = (np.sin(half_angle), -np.cos(half_angle))  # Upward direction
-    direction2 = (np.sin(-half_angle), -np.cos(-half_angle))  # Upward direction
+def draw_tangent_line(tim, point, p_ref_u, p_ref_d, color, thickness):
+    x_p_ref_u, y_p_ref_u = p_ref_u
+    x_point, y_point = point
+    x_p_ref_d, y_p_ref_d = p_ref_d
 
-    # Calculate the endpoints of the lines
-    endpoint1 = (int(x_averg + length * direction1[0]), int(y_averg + length * direction1[1]))
-    endpoint2 = (int(x_averg + length * direction2[0]), int(y_averg + length * direction2[1]))
-
-    # Ensure points are integers before drawing the lines
-    endpoint1 = tuple(map(int, endpoint1))
-    endpoint2 = tuple(map(int, endpoint2))
-
-    # Draw the lines
-    cv2.line(image, (int(x_averg), int(y_averg)), endpoint1, color, thickness)  # First line
-    cv2.line(image, (int(x_averg), int(y_averg)), endpoint2, color, thickness)  # Second line
-
-    return image
-
-
-def draw_tangent_line(tim, x_point, y_point):
     # Generate some curve data (for demonstration, a sine wave in this case)
     x = np.linspace(0, 10, 100)
     y = np.sin(x) * 20 + 50  # A sine wave curve for illustration
@@ -127,57 +109,91 @@ def draw_tangent_line(tim, x_point, y_point):
     slope = delta_y / delta_x  # Approximate derivative
 
     # Calculate the tangent line at the point (x_point, y_point)
-    # Equation of the tangent line: y = slope * (x - x_point) + y_point
+    # Define the length of the tangent line segment
+    length_down = y_p_ref_d - y_point
+    length_up = y_point - y_p_ref_u
 
-    # Increase the length of the tangent line
-    x1 = x_point - 50
-    x2 = x_point + 50
-    y1_tangent = slope * (x1 - x_point) + y_point
-    y2_tangent = slope * (x2 - x_point) + y_point
+    # Calculate the end points of the tangent line segment (downward direction)
+    x2_down = x_point + length_down / np.sqrt(1 + slope**2)
+    y2_down_tangent = y_point + slope * (x2_down - x_point)
+
+    # Calculate the end points of the tangent line segment (upward direction)
+    x2_up = x_point - length_up / np.sqrt(1 + slope**2)
+    y2_up_tangent = y_point - slope * (x_point - x2_up)
+
+    # Ensure the tangent line is constrained within `p_ref_u` and `p_ref_d`
+    if y2_down_tangent > y_p_ref_d:
+        y2_down_tangent = y_p_ref_d
+        x2_down = x_point + (y2_down_tangent - y_point) / slope
+
+    if y2_up_tangent < y_p_ref_u:
+        y2_up_tangent = y_p_ref_u
+        x2_up = x_point + (y2_up_tangent - y_point) / slope
 
     # Draw the tangent line
-    cv2.line(tim, (int(x1), int(y1_tangent)), (int(x2), int(y2_tangent)), (255, 0, 0), 3)  # Blue tangent line
+    cv2.line(
+        tim,
+        (int(x2_up), int(y2_up_tangent)),
+        (int(x2_down), int(y2_down_tangent)),
+        color,
+        thickness,
+    )  # Blue tangent line
 
     # Draw the point on the image (red dot)
-    cv2.circle(tim, (int(x_point), int(y_point)), 2, (0, 0, 255), -1)  # Red circle
+    # cv2.circle(tim, (int(x_point), int(y_point)), 2, color, thickness)  # Red circle
 
     return tim
 
 
-import matplotlib.pyplot as plt
-
-def draw_vertical_line(x):
-    """
-    Draw a vertical line passing through the point (x, y) where y can vary.
-    Parameters:
-        x: The x-coordinate of the point through which the line passes.
-    """
-    # Define the range of y values for plotting
-    y_values = [-10, 10]  # You can adjust this range based on your plot limits
-    
-    # Plot the vertical line
-    plt.plot([x, x], y_values, label=f"Vertical line at x = {x}", color="blue")
-
-
-def extended_line(p_l, P_r, length=150):
-
-    direction = np.array(P_r) - np.array(p_l)
-    line_length = np.linalg.norm(direction)
-    direction = direction / line_length  # Normalize the direction vector
-
-    # Extend the line by the given length
-    p_l_extended = tuple((np.array(p_l) - direction * length).astype(int))
-    P_r_extended = tuple((np.array(P_r) + direction * length).astype(int))
-
-    return p_l_extended, P_r_extended
 
 
 
+def extend_lines(p_left, p_right, p_xleft_ref, p_xright_ref):
+    # Extract x and y coordinates
+    x_left, y_left = p_left
+    x_right, y_right = p_right
+    x_left_ref, y_left_ref = p_xleft_ref
+    x_right_ref, y_right_ref = p_xright_ref
 
-def draw_vertical_line(image, x, length = 100, color=(255, 0, 0), thickness=1):
-    cv2.line(image, (x[0], x[1]- length),  (x[0], x[1] + length), color, thickness)
+    # Calculate the slope and y-intercept of the line between p_left and p_right
+    if x_right != x_left:
+        slope = (y_right - y_left) / (x_right - x_left)
+        intercept_left = y_left - slope * x_left  # y = mx + b -> b = y - mx
+    else:
+        # Special case: vertical line, no slope, just use x value
+        slope = None
+        intercept_left = x_left  # The line is vertical at x = x_left
+
+    # Extend the line until it reaches x_left_ref and x_right_ref
+    if slope is not None:
+        y_left_extended = int(slope * x_left_ref + intercept_left)
+        p_left_extended = (x_left_ref, y_left_extended)
+    else:
+        p_left_extended = (x_left_ref, y_left)
+
+    if slope is not None:
+        y_right_extended = int(slope * x_right_ref + intercept_left)
+        p_right_extended = (x_right_ref, y_right_extended)
+    else:
+        p_right_extended = (x_right_ref, y_right)
+
+    # Return the extended points
+    return p_left_extended, p_right_extended
+
+
+
+def draw_vertical_line(image, x, p_ref_d, p_ref_u , color=(255, 0, 0), thickness=1):
+    # Extract the x, y coordinates of the reference point (p_refrence)
+    # Extract the x, y coordinates of the starting point (x)
+    xx, xy = x
+
+    # Draw a vertical line from x to the y-coordinate of p_refrence
+    # The x-coordinate stays the same, only y changes.
+    cv2.line(image, (xx, p_ref_u[1]), (xx, p_ref_d[1]), color, thickness)
 
     return image
+
+
 
 def create_mask(image, start_point, end_point):
     """
@@ -199,3 +215,8 @@ def create_mask(image, start_point, end_point):
     white_mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
 
     return white_mask, masked_image
+
+
+def connect_noise_points(tim, point_1, point_2, line_color, line_thickness):
+    cv2.line(tim, point_1, point_2, line_color, line_thickness)
+    return tim
