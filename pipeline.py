@@ -12,6 +12,8 @@ with open('config.json', 'r') as f:
     config = json.load(f)
 
 input_image_path = config.get('input_image_path')  
+name_image = os.path.splitext(os.path.basename(input_image_path))[0]
+
 output_folder = config.get('output_folder')
 line_thickness = config.get('line_thickness') 
 line_color = tuple(config.get('line_color'))  
@@ -68,52 +70,53 @@ def eyebrow_finder():
 
             cv2.putText(tim, label, (p[0] + 5, p[1] + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,  (255,200,200), 1, cv2.LINE_AA)
 
-        # Drawing lines with thickness from the config
-        #cv2.line(tim, p50, p51, line_color, line_thickness)  # Line between left eyebrow points
-        #cv2.line(tim, p102, p103, line_color, line_thickness)  # Line between right eyebrow points
-
-        cv2.line(tim, p71, p43, line_color, line_thickness)  # Line between left eye and nose
-        cv2.line(tim, p71, p101, line_color, line_thickness)  # Line between right eye and nose
+  
+        # cv2.line(tim, p71, p43, line_color, line_thickness)  # Line between left eye and nose
+        # cv2.line(tim, p71, p101, line_color, line_thickness)  # Line between right eye and nose
         
-        p51_extended, p103_extended = extend_lines(p51, p103,p43,p101)
-        cv2.line(tim, p51_extended, p103_extended, line_color, line_thickness)  # Extended line between eyebrows
+        # p51_extended, p103_extended = extend_lines(p51, p103,p43,p101)
+        # cv2.line(tim, p51_extended, p103_extended, line_color, line_thickness)  # Extended line between eyebrows
             
-        p49_extended, p104_extended = extend_lines(p49, p104, p43, p101)  
-        cv2.line(tim, p49_extended, p104_extended, line_color, line_thickness)  # Upper points of both eyebrows
+        # p49_extended, p104_extended = extend_lines(p49, p104, p43, p101)  
+        # cv2.line(tim, p49_extended, p104_extended, line_color, line_thickness)  # Upper points of both eyebrows
 
-        p43_extended, p101_extended = extend_lines(p43, p101,p43,p101)
-        cv2.line(tim, p43_extended, p101_extended, line_color, line_thickness)  # Line connecting left eye and right eye
+        # p43_extended, p101_extended = extend_lines(p43, p101,p43,p101)
+        # cv2.line(tim, p43_extended, p101_extended, line_color, line_thickness)  # Line connecting left eye and right eye
         
-        p46_extended, p97_extended = extend_lines(p46, p97,p43,p101)
-        cv2.line(tim, p46_extended, p97_extended, line_color, line_thickness)  # Line connecting lower points of both eyebrows
+        # p46_extended, p97_extended = extend_lines(p46, p97,p43,p101)
+        # cv2.line(tim, p46_extended, p97_extended, line_color, line_thickness)  # Line connecting lower points of both eyebrows
         
-        angle_degrees = calculate_angle(p71, p43, p101)
         
-        y_averg = (p71[1] + p80[1]) / 2
-        x_averg = p80[0]
+        # angle_degrees = calculate_angle(p71, p43, p101)
+        
+        # y_averg = (p71[1] + p80[1]) / 2
+        # x_averg = p80[0]
 
-        # Draw vertical lines and tangent lines
-        draw_vertical_line(tim, p48, p49, p86,line_color, line_thickness)
-        draw_vertical_line(tim, p49, p49, p86, line_color, line_thickness)
-        draw_vertical_line(tim, p104, p104, p86, line_color, line_thickness)
-        draw_vertical_line(tim, p105, p104, p86, line_color, line_thickness)
+        # draw_vertical_line(tim, p48, p49, p86,line_color, line_thickness)
+        # draw_vertical_line(tim, p49, p49, p86, line_color, line_thickness)
+        # draw_vertical_line(tim, p104, p104, p86, line_color, line_thickness)
+        # draw_vertical_line(tim, p105, p104, p86, line_color, line_thickness)
         
    
-        draw_tangent_line(tim, p50, p49, p86, line_color, line_thickness)
-        draw_tangent_line(tim, p102, p104, p86, line_color, line_thickness)
+        # draw_tangent_line(tim, p50, p49, p86, line_color, line_thickness)
+        # draw_tangent_line(tim, p102, p104, p86, line_color, line_thickness)
         
-        # connect_noise_points(tim, p76, p50, line_color, line_thickness)
-        # connect_noise_points(tim, p82, p102, line_color, line_thickness)
+        connect_noise_points(tim, p76, p50, (line_color), line_thickness)
+        connect_noise_points(tim, p82, p102, line_color, line_thickness)
 
     # Mask and output
     points = [p43, p101, p104, p48]
     white_mask, masked_image = create_mask(tim, p45, p100)
 
-    cv2.imwrite(os.path.join(output_folder, 'tst2-landmarks.jpg'), tim)
+    cv2.imwrite(os.path.join(output_folder, f'{name_image}-landmarks.jpg'), tim)
     original, edges = apply_canny_edge_detection(tim, low_threshold=50, high_threshold=150)
-    cv2.imwrite(os.path.join(output_folder, 'tst2-canny.png'), edges)
-    cv2.imwrite(os.path.join(output_folder, 'tst2-white_mask.png'), white_mask)
-    cv2.imwrite(os.path.join(output_folder, 'tst2-masked_rgb_mask.png'), masked_image)
+    cv2.imwrite(os.path.join(output_folder,f'{name_image}-canny.png'), edges)
+    cv2.imwrite(os.path.join(output_folder, f'{name_image}-white_mask.png'), white_mask)
+    cv2.imwrite(os.path.join(output_folder, f'{name_image}-masked_rgb_mask.png'), masked_image)
+
+    cv2.imwrite(os.path.join(output_folder, f'{name_image}-canny.png'), edges)
+    cv2.imwrite(os.path.join(output_folder, f'{name_image}-white_mask.png'), white_mask)
+    cv2.imwrite(os.path.join(output_folder, f'{name_image}-masked_rgb_mask.png'), masked_image)
 
     print(f"Processing complete. Results saved in folder: {output_folder}")
     
