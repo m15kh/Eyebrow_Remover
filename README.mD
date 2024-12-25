@@ -27,6 +27,6 @@ Edit the `config.json` file to set the input image path, output folder, line thi
     "line_thickness": 1,
     "line_color": [255, 255, 255]
 }
-
+```
 ## Inference
 for inference after edit your config file run pipeline.py code 
