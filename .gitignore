@@ -3,3 +3,5 @@ output/
 test/
 gan.py
 df_remover.py
+*.jpg
+*.png
