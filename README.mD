@@ -1,6 +1,6 @@
 ## Installation
 
-1. Clone the repository:
+1. Clone the repository: 
     ```sh
     git clone <repository-url>
     cd <repository-directory>
